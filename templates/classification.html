@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Training Interface</title>
+    <style>
+        /* Previous CSS remains unchanged */
+        :root {
+            --primary-50: #f5f3ff;
+            --primary-100: #ede9fe;
+            --primary-200: #ddd6fe;
+            --primary-300: #c4b5fd;
+            --primary-400: #a78bfa;
+            --primary-500: #8b5cf6;
+            --primary-600: #7c3aed;
+            --primary-700: #6d28d9;
+            --primary-800: #5b21b6;
+            --primary-900: #4c1d95;
+            --white: #ffffff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%);
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--white);
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(to right, var(--primary-700), var(--primary-800));
+            color: var(--white);
+            padding: 2.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.1;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 2.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            background: var(--gray-50);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--primary-100);
+            transition: all 0.3s ease;
+        }
+
+        .form-group:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.75rem;
+            color: var(--primary-900);
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-label svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            color: var(--primary-600);
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--primary-200);
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            background: var(--white);
+            color: var(--primary-900);
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 4px var(--primary-100);
+        }
+
+        .parameter-container {
+            background: var(--white);
+            border: 1px solid var(--primary-200);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .parameter-container h3 {
+            color: var(--primary-800);
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .parameter-container h3 svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: var(--primary-600);
+        }
+
+        .parameter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .parameter-item {
+            background: var(--gray-50);
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--primary-100);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(to right, var(--primary-600), var(--primary-700));
+            color: var(--white);
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-top: 2rem;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        button svg {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        .progress-container {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: var(--gray-50);
+            border-radius: 1rem;
+            border: 1px solid var(--primary-100);
+            display: none;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-status {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--primary-700);
+            padding: 0.35rem 1rem;
+            background: var(--primary-100);
+            border-radius: 9999px;
+        }
+
+        .progress-bar {
+            height: 0.5rem;
+            background: var(--primary-100);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary-500), var(--primary-600));
+            transition: width 0.3s ease;
+        }
+
+        .output-container {
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .output-container h3 {
+            color: var(--primary-800);
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .output-container h3 svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: var(--primary-600);
+        }
+
+        .model-info {
+            background: var(--gray-50);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--primary-100);
+            margin-bottom: 1.5rem;
+            font-family: monospace;
+            font-size: 1.1rem;
+            color: var(--primary-800);
+        }
+
+        .metrics-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .metric-item {
+            background: var(--white);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--primary-100);
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--primary-600);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-800);
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: linear-gradient(to right, var(--primary-600), var(--primary-700));
+            color: var(--white);
+            border-radius: 0.75rem;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin: 0.25rem;
+            border: none;
+            cursor: pointer;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        pre {
+            background: var(--white);
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            font-size: 0.9rem;
+            color: var(--primary-900);
+            border: 1px solid var(--primary-100);
+            line-height: 1.5;
+        }
+
+        .error-container {
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
+            border-radius: 0.75rem;
+            color: #991b1b;
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .container {
+                border-radius: 1rem;
+            }
+
+            .header {
+                padding: 2rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .content {
+                padding: 1.5rem;
+            }
+
+            .parameter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ML Model Training</h1>
+            <p>Train and evaluate machine learning models with ease</p>
+        </div>
+
+        <div class="content">
+            <form id="trainingForm">
+                <div class="form-group">
+                    <label class="form-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        Dataset Selection
+                    </label>
+                    <input type="text" id="filename" value="{{ filename }}" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 16l2 2 4-4" />
+                            <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Train-Test Split
+                    </label>
+                    <select id="testSize">
+                        <option value="0.1">90-10 Split</option>
+                        <option value="0.2" selected>80-20 Split</option>
+                        <option value="0.3">70-30 Split</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20V10" />
+                            <path d="M18 20V4" />
+                            <path d="M6 20v-4" />
+                        </svg>
+                        Model Selection
+                    </label>
+                    <select id="modelType">
+                        <option value="">Select a Model</option>
+                        <option value="auto">Auto</option>
+                        <option value="logistic">Logistic Regression</option>
+                        <option value="ridge_classifier">Ridge Classifier</option>
+                        <option value="svc_linear">Support Vector Classifier (Linear)</option>
+                        <option value="svc_rbf">Support Vector Classifier (RBF)</option>
+                        <option value="svc_poly">Support Vector Classifier (Polynomial)</option>
+                        <option value="svc_sigmoid">Support Vector Classifier (Sigmoid)</option>
+                        <option value="decision_tree">Decision Tree Classifier</option>
+                        <option value="random_forest">Random Forest Classifier</option>
+                        <option value="gradient_boosting">Gradient Boosting Classifier</option>
+                        <option value="adaboost">AdaBoost Classifier</option>
+                        <option value="xgboost">XGBoost Classifier</option>
+                        <option value="catboost">CatBoost Classifier</option>
+                        <option value="gaussian_nb">Gaussian Naive Bayes</option>
+                        <option value="multinomial_nb">Multinomial Naive Bayes</option>
+                        <option value="bernoulli_nb">Bernoulli Naive Bayes</option>
+                        <option value="complement_nb">Complement Naive Bayes</option>
+                        <option value="knn">K-Nearest Neighbors (KNN)</option>                    
+                        </select>
+                </div>
+
+                <div id="parametersContainer" class="parameter-container" style="display: none;">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20V10" />
+                            <path d="M18 20V4" />
+                            <path d="M6 20v-4" />
+                        </svg>
+                        Model Parameters
+                    </h3>
+                    <div class="parameter-grid">
+                        <!-- Parameters will be dynamically added here -->
+                    </div>
+                </div>
+
+                <button type="submit" id="trainButton">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 11-6.219-8.56" />
+                    </svg>
+                    Train Model
+                </button>
+            </form>
+
+            <div id="progressContainer" class="progress-container">
+                <div class="progress-label">
+                    <span>Training Progress</span>
+                    <span id="progressPercent" class="progress-status">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+            </div>
+
+            <div id="errorContainer" class="error-container"></div>
+
+            <div id="outputContainer" class="output-container">
+                <div class="output-section">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Model Files
+                    </h3>
+                    <div id="modelFiles"></div>
+                </div>
+
+                <div class="output-section">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3" />
+                            <path
+                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                        </svg>
+                        Model Trained on
+                    </h3>
+                    <div id="modelInfo" class="model-info"></div>
+                </div>
+
+                <div class="output-section">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                        </svg>
+                        Performance Metrics
+                    </h3>
+                    <div id="metrics" class="metrics-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+     const modelParameters = {
+        logistic: {
+            C: {
+                type: 'number',
+                default: 1,
+                description: 'Inverse of regularization strength',
+                options: [0.1, 1, 10]
+            },
+            solver: {
+                type: 'string',
+                default: 'lbfgs',
+                description: 'Algorithm to use in the optimization problem',
+                options: ['lbfgs', 'liblinear']
+            }
+        },
+        ridge_classifier: {
+            alpha: {
+                type: 'number',
+                default: 1,
+                description: 'Regularization strength',
+                options: [0.01, 0.1, 1, 10]
+            }
+        },
+        svc_linear: {
+            C: {
+                type: 'number',
+                default: 1,
+                description: 'Regularization parameter',
+                options: [0.1, 1, 10]
+            }
+        },
+        svc_rbf: {
+            C: {
+                type: 'number',
+                default: 1,
+                description: 'Regularization parameter',
+                options: [0.1, 1, 10]
+            },
+            gamma: {
+                type: 'string',
+                default: 'scale',
+                description: 'Kernel coefficient',
+                options: ['scale', 'auto']
+            }
+        },
+        svc_poly: {
+            C: {
+                type: 'number',
+                default: 1,
+                description: 'Regularization parameter',
+                options: [0.1, 1, 10]
+            },
+            degree: {
+                type: 'number',
+                default: 3,
+                description: 'Degree of the polynomial kernel function',
+                options: [2, 3, 4]
+            }
+        },
+        svc_sigmoid: {
+            C: {
+                type: 'number',
+                default: 1,
+                description: 'Regularization parameter',
+                options: [0.1, 1, 10]
+            },
+            gamma: {
+                type: 'string',
+                default: 'scale',
+                description: 'Kernel coefficient',
+                options: ['scale', 'auto']
+            }
+        },
+        decision_tree: {
+            max_depth: {
+                type: 'number',
+                default: 5,
+                description: 'Maximum depth of the tree',
+                options: [3, 5, 10, null]
+            },
+            min_samples_split: {
+                type: 'number',
+                default: 2,
+                description: 'Minimum number of samples required to split an internal node',
+                options: [2, 5, 10]
+            }
+        },
+        random_forest: {
+            n_estimators: {
+                type: 'number',
+                default: 50,
+                description: 'Number of trees in the forest',
+                options: [10, 50, 100]
+            },
+            max_depth: {
+                type: 'number',
+                default: 5,
+                description: 'Maximum depth of the tree',
+                options: [3, 5, 10, null]
+            }
+        },
+        gradient_boosting: {
+            n_estimators: {
+                type: 'number',
+                default: 50,
+                description: 'Number of boosting stages',
+                options: [10, 50, 100]
+            },
+            learning_rate: {
+                type: 'number',
+                default: 0.1,
+                description: 'Learning rate shrinks the contribution of each tree',
+                options: [0.01, 0.1, 0.2]
+            },
+            max_depth: {
+                type: 'number',
+                default: 5,
+                description: 'Maximum depth of the tree',
+                options: [3, 5, 10]
+            }
+        },
+        adaboost: {
+            n_estimators: {
+                type: 'number',
+                default: 50,
+                description: 'Number of weak learners',
+                options: [10, 50, 100]
+            },
+            learning_rate: {
+                type: 'number',
+                default: 0.1,
+                description: 'Weight applied to each classifier at each boosting iteration',
+                options: [0.01, 0.1, 1]
+            }
+        },
+        xgboost: {
+            n_estimators: {
+                type: 'number',
+                default: 50,
+                description: 'Number of boosting rounds',
+                options: [10, 50, 100]
+            },
+            learning_rate: {
+                type: 'number',
+                default: 0.1,
+                description: 'Boosting learning rate',
+                options: [0.01, 0.1, 0.2]
+            },
+            max_depth: {
+                type: 'number',
+                default: 5,
+                description: 'Maximum depth of a tree',
+                options: [3, 5, 10]
+            }
+        },
+        catboost: {
+            depth: {
+                type: 'number',
+                default: 6,
+                description: 'Depth of trees',
+                options: [4, 6, 10]
+            },
+            learning_rate: {
+                type: 'number',
+                default: 0.1,
+                description: 'Learning rate',
+                options: [0.01, 0.1, 0.2]
+            },
+            iterations: {
+                type: 'number',
+                default: 100,
+                description: 'Number of boosting iterations',
+                options: [100, 500]
+            }
+        },
+        gaussian_nb: {
+            // No hyperparameters
+        },
+        multinomial_nb: {
+            alpha: {
+                type: 'number',
+                default: 1,
+                description: 'Additive (Laplace/Lidstone) smoothing parameter',
+                options: [0.01, 0.1, 1, 10]
+            }
+        },
+        bernoulli_nb: {
+            alpha: {
+                type: 'number',
+                default: 1,
+                description: 'Additive smoothing parameter',
+                options: [0.01, 0.1, 1, 10]
+            }
+        },
+        complement_nb: {
+            alpha: {
+                type: 'number',
+                default: 1,
+                description: 'Additive smoothing parameter',
+                options: [0.01, 0.1, 1, 10]
+            }
+        },
+        knn: {
+            n_neighbors: {
+                type: 'number',
+                default: 5,
+                description: 'Number of neighbors to use',
+                options: [3, 5, 10]
+            },
+            weights: {
+                type: 'string',
+                default: 'uniform',
+                description: 'Weight function used in prediction',
+                options: ['uniform', 'distance']
+            }
+        }
+    };
+    
+
+        const modelTypeSelect = document.getElementById('modelType');
+        const parametersContainer = document.getElementById('parametersContainer');
+        const trainingForm = document.getElementById('trainingForm');
+        const trainButton = document.getElementById('trainButton');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        const outputContainer = document.getElementById('outputContainer');
+        const errorContainer = document.getElementById('errorContainer');
+
+        function updateParameters() {
+            const modelType = modelTypeSelect.value;
+            const parameters = modelParameters[modelType];
+            const parameterGrid = parametersContainer.querySelector('.parameter-grid');
+
+            if (!parameters) {
+                parametersContainer.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            for (const [key, param] of Object.entries(parameters)) {
+                html += `
+                    <div class="parameter-item">
+                        <label class="form-label">
+                            ${key}
+                            <span class="text-sm text-gray-600">(${param.description})</span>
+                        </label>
+                `;
+
+                if (param.type === 'number' || param.type === 'string') {
+                    html += `
+                        <select id="${key}" class="parameter-input">
+                            ${param.options.map(option =>
+                        `<option value="${option}" ${option === param.default ? 'selected' : ''}>
+                                    ${option === null ? 'None' : option}
+                                </option>`
+                    ).join('')}
+                        </select>
+                    `;
+                } else if (param.type === 'boolean') {
+                    html += `
+                        <select id="${key}" class="parameter-input">
+                            ${param.options.map(option =>
+                        `<option value="${option}" ${option === param.default ? 'selected' : ''}>
+                                    ${option}
+                                </option>`
+                    ).join('')}
+                        </select>
+                    `;
+                }
+
+                html += '</div>';
+            }
+
+            parameterGrid.innerHTML = html;
+            parametersContainer.style.display = 'block';
+        }
+
+        function showError(message) {
+            errorContainer.textContent = message;
+            errorContainer.style.display = 'block';
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            trainButton.disabled = true;
+            progressContainer.style.display = 'block';
+            outputContainer.style.display = 'none';
+            errorContainer.style.display = 'none';
+            progressFill.style.width = '0%';
+            progressPercent.textContent = '0%';
+
+            const parameters = {};
+            const inputs = parametersContainer.querySelectorAll('.parameter-input');
+            inputs.forEach(input => {
+                let value = input.value;
+                if (value === 'true') value = true;
+                else if (value === 'false') value = false;
+                else if (value === 'null') value = null;
+                else if (!isNaN(value)) value = parseFloat(value);
+                parameters[input.id] = value;
+            });
+
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 10;
+                    progressFill.style.width = `${progress}%`;
+                    progressPercent.textContent = `${progress}%`;
+                }
+            }, 300);
+
+            try {
+                const formData = {
+                    filename: document.getElementById('filename').value,
+                    test_size: parseFloat(document.getElementById('testSize').value),
+                    selected_model: modelTypeSelect.value,
+                    model_type: "classification",
+                    hyperparameters: parameters
+                };
+
+                const response = await fetch('/train', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Training failed');
+                }
+
+                const data = await response.json();
+
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                progressPercent.textContent = '100%';
+
+                const modelFilesContainer = document.getElementById('modelFiles');
+                modelFilesContainer.innerHTML = ''; // clear old buttons
+                Object.entries(data.model_files).forEach(([format, base64]) => {
+                    const button = document.createElement("button");
+                    button.className = "download-btn";
+                    button.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        model.${format}
+    `;
+                    button.addEventListener("click", () => downloadFile(base64, `model.${format}`));
+                    modelFilesContainer.appendChild(button);
+                });
+
+                displayResults(data);
+
+            } catch (error) {
+                clearInterval(progressInterval);
+                showError(error.message);
+                progressFill.style.backgroundColor = '#ef4444';
+            } finally {
+                trainButton.disabled = false;
+            }
+        }
+
+        function downloadFile(base64Data, filename = "model_file") {
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: "application/octet-stream" });
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function displayResults(data) {
+            const outputContainer = document.querySelector('.output-container');
+            outputContainer.style.display = 'block';
+
+            // Display model information
+            const modelInfo = document.getElementById('modelInfo');
+            const modelName = data.selected_model;
+            const params = Object.entries(data.hyperparameters)
+                .map(([key, value]) => {
+                    // Handle string values by adding quotes
+                    if (typeof value === 'string') {
+                        return `${key}='${value}'`;
+                    }
+                    return `${key}=${value}`;
+                })
+                .join(', ');
+            modelInfo.textContent = `${modelName}(${params})`;
+
+            // Display metrics
+            const metricsContainer = document.getElementById('metrics');
+            metricsContainer.innerHTML = ''; // Clear previous metrics
+            
+            Object.entries(data.evaluation_metrics).forEach(([metric, value]) => {
+                const metricItem = document.createElement('div');
+                metricItem.className = 'metric-item';
+                
+                const metricLabel = document.createElement('div');
+                metricLabel.className = 'metric-label';
+                metricLabel.textContent = metric;
+                
+                const metricValue = document.createElement('div');
+                metricValue.className = 'metric-value';
+                metricValue.textContent = value.toFixed(4);
+                
+                metricItem.appendChild(metricLabel);
+                metricItem.appendChild(metricValue);
+                metricsContainer.appendChild(metricItem);
+            });
+        }
+
+        modelTypeSelect.addEventListener('change', updateParameters);
+        trainingForm.addEventListener('submit', handleSubmit);
+        updateParameters();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const datasetName = urlParams.get('dataset');
+        if (datasetName) {
+            document.getElementById('filename').value = datasetName;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Preprocessor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>CSV Preprocessor</h1>
+            
+            <div class="upload-container">
+                <input type="file" id="fileInput" accept=".csv" class="hidden">
+                <label for="fileInput" class="file-label">
+                    <svg class="icon upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                    <span id="fileName">Choose CSV file</span>
+                </label>
+            </div>
+
+            <div class="input-group">
+                <label for="targetVariable" class="input-label">Target Variable</label>
+                <input 
+                    type="text" 
+                    id="targetVariable" 
+                    class="text-input" 
+                    placeholder="Enter target variable name"
+                >
+            </div>
+
+            <button id="preprocessButton" class="button preprocess-button" disabled>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                </svg>
+                <span>Preprocess File</span>
+            </button>
+
+            <div id="actionButtons" class="action-buttons hidden">
+                <button id="downloadButton" class="button download-button">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    Download
+                </button>
+                
+                <button id="continueButton" class="button continue-button">
+                    Continue
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="message" class="message"></div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
