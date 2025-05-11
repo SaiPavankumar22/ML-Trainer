@@ -59,15 +59,8 @@ ML-Train is a comprehensive web-based platform that automates the entire machine
   - Pickle (.pkl)
   - Joblib (.joblib)
   - ONNX (.onnx)
-  - PMML (.pmml)
-  - CoreML (.mlmodel)
-  - TensorFlow (.pb)
-  - PyTorch (.pt)
-- **Format-specific Optimizations**
-  - ONNX: Cross-platform compatibility
-  - PMML: Enterprise integration
-  - CoreML: iOS deployment
-  - TensorFlow/PyTorch: Deep learning support
+  - sav (.sav)
+  - dill (.dill)
 
 ### 4. Real-time Predictions
 - **Interactive Prediction Interface**
