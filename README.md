@@ -185,4 +185,26 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 5. Create a Pull Request
 
 ## 📧 Contact
-For questions and support, please open an issue in the GitHub repository. 
+For questions and support, please open an issue in the GitHub repository.
+
+## Project Structure
+
+```
+├── app.py                 # Main application file
+├── requirements.txt       # Project dependencies
+├── uploads/              # Directory for uploaded datasets
+├── models/              # Directory for saved models
+├── static/              # Static files
+│   ├── css/            # CSS stylesheets
+│   │   └── style.css   # Main stylesheet
+│   └── js/             # JavaScript files
+│       ├── main.js     # Main JavaScript file
+│       ├── regression.js
+│       ├── classification.js
+│       └── predictions.js
+└── templates/           # HTML templates
+    ├── main.html       # Homepage
+    ├── regression.html # Regression model interface
+    ├── classification.html # Classification model interface
+    └── predictions.html # Real-time predictions interface
+``` 
