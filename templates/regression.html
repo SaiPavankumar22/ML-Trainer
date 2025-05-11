@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ML Training Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
         /* Previous CSS remains unchanged */
         :root {
@@ -382,6 +383,31 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .prediction-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 20px auto;
+            transition: background-color 0.3s;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .prediction-button:hover {
+            background-color: #45a049;
+        }
+        .prediction-button svg {
+            width: 20px;
+            height: 20px;
+        }
     </style>
 </head>
 
@@ -517,6 +543,14 @@
                     </h3>
                     <div id="metrics" class="metrics-container"></div>
                 </div>
+
+                <!-- Prediction Button -->
+                <button onclick="goToPredictions()" class="btn-predict" style="margin-top: 2rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; margin-right: 8px;">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    Make Predictions
+                </button>
             </div>
         </div>
     </div>
@@ -911,6 +945,11 @@
         const datasetName = urlParams.get('dataset');
         if (datasetName) {
             document.getElementById('filename').value = datasetName;
+        }
+
+        function goToPredictions() {
+            const filename = document.getElementById('filename').value;
+            window.location.href = `/predictions/${filename}`;
         }
     </script>
 </body>

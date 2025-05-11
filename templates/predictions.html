@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Predictions</title>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .feature-input {
+            margin-bottom: 1.5rem;
+        }
+        .feature-input label {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .feature-input input {
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            padding: 0.5rem;
+            width: 100%;
+            transition: border-color 0.15s ease-in-out;
+        }
+        .feature-input input:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+        .prediction-result {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 10px;
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .btn-predict {
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-top: 1rem;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        .btn-predict:hover {
+            background-color: #0056b3;
+        }
+        .model-format-select {
+            margin-bottom: 2rem;
+        }
+        .model-format-select label {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .model-format-select select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+        }
+        .probability-list {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+        }
+        .probability-list li {
+            padding: 0.5rem;
+            background: rgba(255,255,255,0.5);
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-bottom: 1rem;
+            transition: background-color 0.3s;
+        }
+        .back-button:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="javascript:history.back()" class="back-button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back
+        </a>
+        <h2>Make Predictions</h2>
+        
+        <!-- Model Format Selection -->
+        <div class="model-format-select">
+            <label for="modelFormat">Select Model Format:</label>
+            <select id="modelFormat">
+                <option value="pkl">Pickle (.pkl)</option>
+                <option value="joblib">Joblib (.joblib)</option>
+                <option value="sav">Pickle (.sav)</option>
+                <option value="dill">Dill (.dill)</option>
+                <option value="onnx">ONNX (.onnx)</option>
+            </select>
+        </div>
+
+        <!-- Dynamic Feature Inputs -->
+        <div id="featureInputs" class="mb-4">
+            {% for feature in features %}
+            <div class="feature-input">
+                <label for="{{ feature }}">{{ feature }}:</label>
+                <input type="text" id="{{ feature }}" name="{{ feature }}" required>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p class="mt-2">Making prediction...</p>
+        </div>
+
+        <!-- Predict Button -->
+        <button class="btn-predict" onclick="makePrediction()">Predict</button>
+
+        <!-- Prediction Result -->
+        <div id="predictionResult" class="prediction-result">
+            <h4>Prediction Result:</h4>
+            <p id="predictionValue"></p>
+            <div id="probabilities" style="display: none;">
+                <h5>Class Probabilities:</h5>
+                <ul id="probabilityList" class="probability-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function validateInputs() {
+            const inputs = document.querySelectorAll('#featureInputs input');
+            let isValid = true;
+            
+            inputs.forEach(input => {
+                if (!input.value.trim()) {
+                    input.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    input.classList.remove('is-invalid');
+                }
+            });
+            
+            return isValid;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.querySelector('.btn-predict').disabled = show;
+        }
+
+        function makePrediction() {
+            if (!validateInputs()) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            const modelFormat = document.getElementById('modelFormat').value;
+            const inputValues = {};
+            
+            // Collect all input values
+            {% for feature in features %}
+            inputValues['{{ feature }}'] = document.getElementById('{{ feature }}').value;
+            {% endfor %}
+
+            // Prepare request data
+            const data = {
+                filename: '{{ filename }}',
+                model_format: modelFormat,
+                input_values: inputValues
+            };
+
+            showLoading(true);
+
+            // Make API call
+            fetch('/predict_value', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('predictionResult');
+                const predictionValue = document.getElementById('predictionValue');
+                const probabilities = document.getElementById('probabilities');
+                const probabilityList = document.getElementById('probabilityList');
+
+                if (data.error) {
+                    resultDiv.className = 'prediction-result error';
+                    predictionValue.textContent = `Error: ${data.error}`;
+                    probabilities.style.display = 'none';
+                } else {
+                    resultDiv.className = 'prediction-result success';
+                    predictionValue.textContent = `Predicted Value: ${data.prediction}`;
+                    
+                    // Show probabilities if available
+                    if (data.probabilities) {
+                        probabilities.style.display = 'block';
+                        probabilityList.innerHTML = '';
+                        data.probabilities.forEach((prob, index) => {
+                            const li = document.createElement('li');
+                            li.textContent = `Class ${index}: ${(prob * 100).toFixed(2)}%`;
+                            probabilityList.appendChild(li);
+                        });
+                    } else {
+                        probabilities.style.display = 'none';
+                    }
+                }
+                resultDiv.style.display = 'block';
+            })
+            .catch(error => {
+                const resultDiv = document.getElementById('predictionResult');
+                resultDiv.className = 'prediction-result error';
+                document.getElementById('predictionValue').textContent = `Error: ${error.message}`;
+                document.getElementById('probabilities').style.display = 'none';
+                resultDiv.style.display = 'block';
+            })
+            .finally(() => {
+                showLoading(false);
+            });
+        }
+
+        // Add input validation on blur
+        document.querySelectorAll('#featureInputs input').forEach(input => {
+            input.addEventListener('blur', function() {
+                if (!this.value.trim()) {
+                    this.classList.add('is-invalid');
+                } else {
+                    this.classList.remove('is-invalid');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

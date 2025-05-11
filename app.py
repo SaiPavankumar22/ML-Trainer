@@ -201,6 +201,12 @@ classification_models = {
 @app.route('/')
 def index():
     return render_template('main.html')
+
+@app.route('/output')
+def output():
+    return render_template('predictions.html')
+
+
 filename = None
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -570,6 +576,97 @@ def download_file(filename):
         return jsonify({"error": "File not found"}), 404
 
     return send_from_directory(MODEL_FOLDER, filename, as_attachment=True)
+
+def get_model_features(filename):
+    """Get feature names from the dataset used to train the model."""
+    try:
+        # Read the processed dataset
+        df = pd.read_csv(os.path.join(UPLOAD_FOLDER, filename))
+        # Return all columns except the last one (target)
+        return df.columns[:-1].tolist()
+    except Exception as e:
+        logger.error(f"Error getting model features: {str(e)}")
+        return []
+
+@app.route('/predictions/<filename>')
+def predictions(filename):
+    """Render the predictions page with available models and features."""
+    features = get_model_features(filename)
+    return render_template('predictions.html', filename=filename, features=features)
+
+@app.route('/predict_value', methods=['POST'])
+def predict_value():
+    """Handle prediction requests."""
+    try:
+        data = request.json
+        filename = data['filename']
+        model_format = data['model_format']
+        input_values = data['input_values']
+        
+        # Load the appropriate model based on format
+        model_path = os.path.join(MODEL_FOLDER, f"{filename.split('.')[0]}.{model_format}")
+        
+        if not os.path.exists(model_path):
+            return jsonify({"error": f"Model file not found: {model_path}"}), 404
+            
+        # Load model based on format
+        try:
+            if model_format == 'pkl':
+                with open(model_path, 'rb') as f:
+                    model = pickle.load(f)
+            elif model_format == 'joblib':
+                model = joblib.load(model_path)
+            elif model_format == 'sav':
+                with open(model_path, 'rb') as f:
+                    model = pickle.load(f)
+            elif model_format == 'dill':
+                with open(model_path, 'rb') as f:
+                    model = dill.load(f)
+            elif model_format == 'onnx':
+                return jsonify({"error": "ONNX models are not supported for direct prediction. Please use a different format (pkl, joblib, sav, or dill)."}), 400
+            else:
+                return jsonify({"error": f"Unsupported model format: {model_format}. Please use pkl, joblib, sav, or dill."}), 400
+        except Exception as e:
+            logger.error(f"Error loading model: {str(e)}")
+            return jsonify({"error": f"Error loading model: {str(e)}"}), 500
+            
+        # Convert input values to numeric array
+        try:
+            input_array = np.array([float(input_values[feature]) for feature in input_values.keys()]).reshape(1, -1)
+        except ValueError as e:
+            return jsonify({"error": f"Invalid input value: {str(e)}. All inputs must be numeric."}), 400
+        except Exception as e:
+            logger.error(f"Error processing input values: {str(e)}")
+            return jsonify({"error": f"Error processing input values: {str(e)}"}), 500
+        
+        # Make prediction
+        try:
+            prediction = model.predict(input_array)
+            
+            # If it's a classification model, get probabilities if available
+            if hasattr(model, 'predict_proba'):
+                try:
+                    probabilities = model.predict_proba(input_array)
+                    return jsonify({
+                        "prediction": float(prediction[0]),
+                        "probabilities": probabilities[0].tolist()
+                    })
+                except Exception as e:
+                    logger.error(f"Error getting probabilities: {str(e)}")
+                    return jsonify({
+                        "prediction": float(prediction[0]),
+                        "warning": "Could not get class probabilities"
+                    })
+            
+            return jsonify({"prediction": float(prediction[0])})
+            
+        except Exception as e:
+            logger.error(f"Error making prediction: {str(e)}")
+            return jsonify({"error": f"Error making prediction: {str(e)}"}), 500
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in predict_value: {str(e)}")
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
