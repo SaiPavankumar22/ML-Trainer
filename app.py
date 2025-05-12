@@ -6,44 +6,11 @@ import dill
 import base64
 import pandas as pd
 import numpy as np
-import tensorflow as tf
-import torch
-import onnx
-import coremltools as ct
+import logging
 from werkzeug.utils import secure_filename
 from flask_swagger_ui import get_swaggerui_blueprint
-from skl2onnx import convert_sklearn
-from skl2onnx.common.data_types import FloatTensorType
-from nyoka import skl_to_pmml
-from imblearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import PolynomialFeatures, StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder
-from sklearn.pipeline import make_pipeline
-from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor
-from sklearn.svm import SVR
-from xgboost import XGBRegressor
-from catboost import CatBoostRegressor
-from lightgbm import LGBMRegressor
-from sklearn.linear_model import LogisticRegression, RidgeClassifier
-from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
-from xgboost import XGBClassifier
-from lightgbm import LGBMClassifier
-from catboost import CatBoostClassifier
-from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB, ComplementNB
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import mean_squared_error, root_mean_squared_error, r2_score
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from werkzeug.utils import secure_filename
-from scipy.stats import zscore
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.cluster import KMeans
-import logging
-from onnxmltools.convert import convert_xgboost
 
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -55,6 +22,39 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(MODEL_FOLDER, exist_ok=True)
 val=""
 ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
+
+# Import ML libraries
+from xgboost import XGBRegressor, XGBClassifier
+from catboost import CatBoostRegressor, CatBoostClassifier
+from skl2onnx.common.data_types import FloatTensorType
+from skl2onnx import convert_sklearn
+from onnxmltools.convert import convert_xgboost
+
+# Import sklearn and other basic ML libraries
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor
+from sklearn.svm import SVR
+from sklearn.linear_model import LogisticRegression, RidgeClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB, ComplementNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import mean_squared_error, root_mean_squared_error, r2_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from scipy.stats import zscore
+
+# Lazy loading of ML libraries
+def import_ml_libraries():
+    global tensorflow, torch, onnx, coremltools
+    import tensorflow as tf
+    import torch
+    import onnx
+    import coremltools as ct
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -352,6 +352,33 @@ def train_model():
     df = pd.read_csv(os.path.join(UPLOAD_FOLDER, filename))
     X = df.iloc[:, :-1]
     y = df.iloc[:, -1]
+
+    # --- Encode all categorical features and save encoders ---
+    from sklearn.preprocessing import LabelEncoder
+    import numpy as np
+    import pickle
+    feature_encoders = {}
+    for col in X.columns:
+        if X[col].dtype == 'object' or not np.issubdtype(X[col].dtype, np.number):
+            le = LabelEncoder()
+            X[col] = le.fit_transform(X[col].astype(str))
+            feature_encoders[col] = le
+    # Save feature encoders
+    if feature_encoders:
+        encoders_path = os.path.join(MODEL_FOLDER, f"{filename.split('.')[0]}_feature_encoders.pkl")
+        with open(encoders_path, 'wb') as f:
+            pickle.dump(feature_encoders, f)
+
+    # --- Encode target if it's not numeric ---
+    label_encoder = None
+    if y.dtype == 'object' or not np.issubdtype(y.dtype, np.number):
+        label_encoder = LabelEncoder()
+        y = label_encoder.fit_transform(y)
+        # Save the encoder for later use
+        encoder_path = os.path.join(MODEL_FOLDER, f"{filename.split('.')[0]}_label_encoder.pkl")
+        with open(encoder_path, 'wb') as f:
+            pickle.dump(label_encoder, f)
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
     if model_type == 'regression':
         models = regression_models
@@ -630,11 +657,30 @@ def predict_value():
             logger.error(f"Error loading model: {str(e)}")
             return jsonify({"error": f"Error loading model: {str(e)}"}), 500
             
-        # Convert input values to numeric array
+        # Load feature encoders if they exist
+        encoders_path = os.path.join(MODEL_FOLDER, f"{filename.split('.')[0]}_feature_encoders.pkl")
+        feature_encoders = {}
+        if os.path.exists(encoders_path):
+            with open(encoders_path, 'rb') as f:
+                feature_encoders = pickle.load(f)
+        # Try to load label encoder for the target
+        encoder_path = os.path.join(MODEL_FOLDER, f"{filename.split('.')[0]}_label_encoder.pkl")
+        label_encoder = None
+        if os.path.exists(encoder_path):
+            with open(encoder_path, 'rb') as f:
+                label_encoder = pickle.load(f)
+        
+        # Convert input values to numeric array, using feature encoders if available
         try:
-            input_array = np.array([float(input_values[feature]) for feature in input_values.keys()]).reshape(1, -1)
+            input_array = []
+            for feature in input_values.keys():
+                value = input_values[feature]
+                if feature in feature_encoders:
+                    value = feature_encoders[feature].transform([value])[0]
+                input_array.append(float(value))
+            input_array = np.array(input_array).reshape(1, -1)
         except ValueError as e:
-            return jsonify({"error": f"Invalid input value: {str(e)}. All inputs must be numeric."}), 400
+            return jsonify({"error": f"Invalid input value: {str(e)}. All inputs must be numeric or valid class labels."}), 400
         except Exception as e:
             logger.error(f"Error processing input values: {str(e)}")
             return jsonify({"error": f"Error processing input values: {str(e)}"}), 500
@@ -642,31 +688,41 @@ def predict_value():
         # Make prediction
         try:
             prediction = model.predict(input_array)
-            
+            # Try to decode prediction if label encoder exists
+            if label_encoder is not None:
+                prediction = label_encoder.inverse_transform([int(prediction[0])])
+                prediction = prediction[0]
+            else:
+                prediction = float(prediction[0])
             # If it's a classification model, get probabilities if available
             if hasattr(model, 'predict_proba'):
                 try:
                     probabilities = model.predict_proba(input_array)
-                    return jsonify({
-                        "prediction": float(prediction[0]),
-                        "probabilities": probabilities[0].tolist()
-                    })
+                    if label_encoder is not None:
+                        class_labels = label_encoder.inverse_transform(np.arange(probabilities.shape[1]))
+                        return jsonify({
+                            "prediction": prediction,
+                            "probabilities": dict(zip(class_labels, probabilities[0].tolist()))
+                        })
+                    else:
+                        return jsonify({
+                            "prediction": prediction,
+                            "probabilities": probabilities[0].tolist()
+                        })
                 except Exception as e:
                     logger.error(f"Error getting probabilities: {str(e)}")
                     return jsonify({
-                        "prediction": float(prediction[0]),
+                        "prediction": prediction,
                         "warning": "Could not get class probabilities"
                     })
-            
-            return jsonify({"prediction": float(prediction[0])})
-            
+            return jsonify({"prediction": prediction})
         except Exception as e:
             logger.error(f"Error making prediction: {str(e)}")
             return jsonify({"error": f"Error making prediction: {str(e)}"}), 500
-        
     except Exception as e:
         logger.error(f"Unexpected error in predict_value: {str(e)}")
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)

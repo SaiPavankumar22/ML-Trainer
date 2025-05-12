@@ -236,10 +236,10 @@
 
       const modelFormat = document.getElementById('modelFormat').value;
       const inputValues = {};
-
-      {% for feature in features %}
-      inputValues['{{ feature }}'] = document.getElementById('{{ feature }}').value;
-      {% endfor %}
+      // Dynamically collect all feature inputs
+      document.querySelectorAll('#featureInputs input').forEach(input => {
+        inputValues[input.id] = input.value;
+      });
 
       const data = {
         filename: '{{ filename }}',
@@ -274,11 +274,19 @@
           if (data.probabilities) {
             probabilities.style.display = 'block';
             probabilityList.innerHTML = '';
-            data.probabilities.forEach((prob, index) => {
-              const li = document.createElement('li');
-              li.textContent = `Class ${index}: ${(prob * 100).toFixed(2)}%`;
-              probabilityList.appendChild(li);
-            });
+            if (Array.isArray(data.probabilities)) {
+              data.probabilities.forEach((prob, index) => {
+                const li = document.createElement('li');
+                li.textContent = `Class ${index}: ${(prob * 100).toFixed(2)}%`;
+                probabilityList.appendChild(li);
+              });
+            } else if (typeof data.probabilities === 'object' && data.probabilities !== null) {
+              Object.entries(data.probabilities).forEach(([label, prob]) => {
+                const li = document.createElement('li');
+                li.textContent = `${label}: ${(prob * 100).toFixed(2)}%`;
+                probabilityList.appendChild(li);
+              });
+            }
           } else {
             probabilities.style.display = 'none';
           }
